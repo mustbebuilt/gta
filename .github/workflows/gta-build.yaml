@@ -1,3 +1,4 @@
+```yaml
 # To better understand this file read this:
 # https://docs.ionos.space/docs/github-actions-customization/
 
@@ -21,6 +22,7 @@ jobs:
   build-project:
     name: build gta
     runs-on: ubuntu-latest
+
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -28,16 +30,37 @@ jobs:
           submodules:
             "recursive"
 
-            # 1. SETUP PHP RUNTIME IN GITHUB RUNNER
+      # 1. SETUP PHP RUNTIME IN GITHUB RUNNER
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.2" # Match your target IONOS PHP production version
+          php-version: "8.2"
           extensions: mbstring, xml, ctype, iconv
 
       # 2. RUN COMPOSER TO GENERATE THE VENDOR FOLDER & PHPDOTENV
       - name: Install Composer Dependencies
         run: composer install --no-dev --optimize-autoloader
+
+      # ------------------------------------------------------------
+      # DIAGNOSTIC: Confirm the Deploy Now files exist at build time
+      # ------------------------------------------------------------
+      - name: Check Deploy Now template
+        run: |
+          echo "=== .deploy-now/gta directory ==="
+          ls -la .deploy-now/gta/
+
+          echo ""
+          echo "=== Environment template files ==="
+          find .deploy-now/gta -name ".env*" -type f -print
+
+          echo ""
+          echo "=== .env.template contents ==="
+          if [ -f .deploy-now/gta/.env.template ]; then
+            cat .deploy-now/gta/.env.template
+          else
+            echo "ERROR: .env.template was not found!"
+            exit 1
+          fi
 
       # Please do not touch the following action
       - name: Store deployment content
@@ -51,3 +74,4 @@ jobs:
           folder: ${{ env.DEPLOYMENT_FOLDER }}
           config-file: .deploy-now/gta/config.yaml
           action: upload
+```
