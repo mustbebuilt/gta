@@ -10,7 +10,7 @@ $password = getenv('DB_PASSWORD');  // Replace with your MySQL password
 
 try {
     // Create a PDO connection to MySQL
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo = new PDO("mysql:host=$host;port=3306;dbname=$dbname;charset=utf8", $username, $password);
 
     // Set error mode to exception for better debugging
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
