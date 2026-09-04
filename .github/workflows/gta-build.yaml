@@ -13,6 +13,10 @@ on:
         required: true
         type: string
 
+# CRITICAL: This must be present at the root level to inherit the IONOS API keys
+secrets:
+  inherit:
+
 env:
   DEPLOYMENT_FOLDER: ./
 
@@ -25,10 +29,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
         with:
-          submodules:
-            "recursive"
+          submodules: "recursive" # Fixed layout indentation
 
-            # 1. SETUP PHP RUNTIME IN GITHUB RUNNER
+      # 1. SETUP PHP RUNTIME IN GITHUB RUNNER
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
