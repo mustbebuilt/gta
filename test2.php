@@ -22,17 +22,9 @@ $loaded = $dotenv->safeLoad();
 
 echo "\n=== Loaded .env values ===\n";
 
-print_r($loaded);
 
 echo "\n=== Environment variables ===\n";
 
 echo "DB_CONNECTION: " . (getenv('DB_CONNECTION') ?: '<not set>') . "\n";
-echo "DB_HOST: " . (getenv('DB_HOST') ?: '<not set>') . "\n";
-echo "DB_PORT: " . (getenv('DB_PORT') ?: '<not set>') . "\n";
-echo "DB_DATABASE: " . (getenv('DB_DATABASE') ?: '<not set>') . "\n";
-echo "DB_USERNAME: " . (getenv('DB_USERNAME') ?: '<not set>') . "\n";
-
-// Don't display the actual password
-echo "DB_PASSWORD: " . (getenv('DB_PASSWORD') ? '<set>' : '<not set>') . "\n";
 
 echo "</pre>";

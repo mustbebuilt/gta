@@ -39,10 +39,6 @@ jobs:
         deployment-id: ${{ fromJson(inputs.deployment-ids) }}
 
     steps:
-      # ------------------------------------------------------------
-      # Mark deployment as in progress
-      # ------------------------------------------------------------
-
       - name: Update deployment status
         uses: ionos-deploy-now/project-action@v1
         with:
@@ -54,10 +50,6 @@ jobs:
           action: update-status
           status: in_progress
 
-      # ------------------------------------------------------------
-      # Retrieve the build artifact
-      # ------------------------------------------------------------
-
       - name: Retrieve stored deployment
         uses: ionos-deploy-now/artifact-action@v1
         with:
@@ -67,10 +59,6 @@ jobs:
           branch-id: ${{ inputs.branch-id }}
           version: ${{ inputs.version }}
           action: download
-
-      # ------------------------------------------------------------
-      # Get deployment information
-      # ------------------------------------------------------------
 
       - name: Fetch deployment info
         uses: ionos-deploy-now/project-action@v1
@@ -97,70 +85,65 @@ jobs:
           output-directory: deployment
 
       # ------------------------------------------------------------
-      # Diagnostic - check generated .env
+      # Check generated .env
       # ------------------------------------------------------------
 
       - name: Check rendered environment
         run: |
-          echo "=== Deployment directory ==="
-          find deployment -maxdepth 4 -type f -print | sort
-
-          echo ""
           echo "=== .deploy-now/gta directory ==="
-
           ls -la deployment/.deploy-now/gta/
 
           echo ""
-          echo "=== Rendered .env ==="
+          echo "=== Rendered .env status ==="
 
-          if [ -f deployment/.deploy-now/gta/.env ]; then
-
-            echo ".env WAS generated successfully."
-            echo ""
-
-            echo "Checking rendered variables:"
-
-            if grep -q '^DB_CONNECTION=' deployment/.deploy-now/gta/.env; then
-              echo "DB_CONNECTION=<set>"
-            else
-              echo "DB_CONNECTION=<missing>"
-            fi
-
-            if grep -q '^DB_HOST=' deployment/.deploy-now/gta/.env; then
-              echo "DB_HOST=<set>"
-            else
-              echo "DB_HOST=<missing>"
-            fi
-
-            if grep -q '^DB_PORT=' deployment/.deploy-now/gta/.env; then
-              echo "DB_PORT=<set>"
-            else
-              echo "DB_PORT=<missing>"
-            fi
-
-            if grep -q '^DB_DATABASE=' deployment/.deploy-now/gta/.env; then
-              echo "DB_DATABASE=<set>"
-            else
-              echo "DB_DATABASE=<missing>"
-            fi
-
-            if grep -q '^DB_USERNAME=' deployment/.deploy-now/gta/.env; then
-              echo "DB_USERNAME=<set>"
-            else
-              echo "DB_USERNAME=<missing>"
-            fi
-
-            if grep -q '^DB_PASSWORD=' deployment/.deploy-now/gta/.env; then
-              echo "DB_PASSWORD=<set>"
-            else
-              echo "DB_PASSWORD=<missing>"
-            fi
-
-          else
-
-            echo "ERROR: .env was NOT generated!"
+          if [ ! -f deployment/.deploy-now/gta/.env ]; then
+            echo "ERROR: .env was NOT generated."
             exit 1
+          fi
 
+          echo ".env WAS generated successfully."
+
+          echo ""
+          echo "=== Checking rendered values ==="
+
+          echo ""
+          echo "DB_CONNECTION:"
+          grep '^DB_CONNECTION=' deployment/.deploy-now/gta/.env \
+            | sed 's/=.*/=<set>/'
+
+          echo "DB_HOST:"
+          grep '^DB_HOST=' deployment/.deploy-now/gta/.env \
+            | sed 's/=.*/=<set>/'
+
+          echo "DB_PORT:"
+          grep '^DB_PORT=' deployment/.deploy-now/gta/.env \
+            | sed 's/=.*/=<set>/'
+
+          echo "DB_DATABASE:"
+          grep '^DB_DATABASE=' deployment/.deploy-now/gta/.env \
+            | sed 's/=.*/=<set>/'
+
+          echo "DB_USERNAME:"
+          grep '^DB_USERNAME=' deployment/.deploy-now/gta/.env \
+            | sed 's/=.*/=<set>/'
+
+          if grep -q '^DB_PASSWORD=' deployment/.deploy-now/gta/.env; then
+            echo "DB_PASSWORD: <set>"
+          else
+            echo "DB_PASSWORD: <missing>"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Checking for unresolved template variables ==="
+
+          if grep -q 'IONOS_DB_' deployment/.deploy-now/gta/.env; then
+            echo "WARNING: Unresolved IONOS_DB_ variable found."
+            grep 'IONOS_DB_' deployment/.deploy-now/gta/.env \
+              | sed 's/=.*/=<redacted>/'
+            exit 1
+          else
+            echo "No unresolved IONOS_DB_ variables found."
           fi
 
       # ------------------------------------------------------------
@@ -198,7 +181,7 @@ jobs:
           ssh-key: ${{ secrets.IONOS_SSH_KEY }}
 
       # ------------------------------------------------------------
-      # Mark deployment status
+      # Update deployment status
       # ------------------------------------------------------------
 
       - name: Update deployment status
@@ -213,9 +196,9 @@ jobs:
           action: update-status
           status: ${{ job.status }}
 
-  # ----------------------------------------------------------------
-  # Notify that all deployments have finished
-  # ----------------------------------------------------------------
+  # --------------------------------------------------------------
+  # Notify all deployments finished
+  # --------------------------------------------------------------
 
   notify-deployment-finished:
     needs: deploy-to-ionos
