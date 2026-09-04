@@ -5,7 +5,6 @@ if (file_exists(__DIR__ . '/.env')) {
 } else {
     echo "No .env file found at: " . __DIR__;
 }
-exit;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
