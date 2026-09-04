@@ -6,9 +6,9 @@ error_reporting(E_ALL);
 
 echo "<pre>";
 
-echo ".env location: " . __DIR__ . "/.env\n";
+echo ".env location: " . __DIR__ . "/.deploy-new/gta/.env\n";
 
-if (file_exists(__DIR__ . '/.env')) {
+if (file_exists(__DIR__ . '/.deploy-new/gta/.env')) {
     echo ".env file EXISTS\n";
 } else {
     echo ".env file NOT FOUND\n";
