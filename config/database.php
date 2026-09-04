@@ -1,25 +1,23 @@
 <?php
+$mailHost = getenv('MAIL_HOST');
+$mailPassword = getenv('MAIL_PASSWORD');
+$basePath = getenv('BASE_PATH') ?: "/";
+$host = getenv('DB_HOST');  // Replace with your MySQL host, e.g., 'localhost' or an IP address
+$dbname = getenv('DB_DATABASE');  // Replace with your MySQL database name
+$username = getenv('DB_USER');  // Replace with your MySQL username
+$password = getenv('DB_PASSWORD');  // Replace with your MySQL password
 
-declare(strict_types=1);
+try {
+    // Create a PDO connection to MySQL
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
 
-function databaseConnection(): PDO
-{
-    $host = getenv('DB_HOST') ?: '';
-    $port = getenv('DB_PORT') ?: '3306';
-    $name = getenv('DB_NAME') ?: '';
-    $user = getenv('DB_USER') ?: '';
-    $password = getenv('DB_PASSWORD') ?: '';
-    $charset = getenv('DB_CHARSET') ?: 'utf8mb4';
+    // Set error mode to exception for better debugging
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    if ($host === '' || $name === '' || $user === '') {
-        throw new RuntimeException('Database environment variables are not configured.');
-    }
+    // Enable foreign key checks (optional, depending on your needs)
+    $pdo->exec("SET foreign_key_checks = 1;");  // This is to enable foreign key checks in MySQL
 
-    $dsn = "mysql:host={$host};port={$port};dbname={$name};charset={$charset}";
-
-    return new PDO($dsn, $user, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+} catch (PDOException $e) {
+    // Handle the error (optional: log it elsewhere or display a message)
+    echo "Connection failed: " . $e->getMessage();
 }
