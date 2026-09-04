@@ -164,6 +164,36 @@ jobs:
         run: |
           echo SSH_USERNAME_SECRET=IONOS_DEPLOYMENT_`echo ${{ matrix.deployment-id }} | tr '[:lower:]' '[:upper:]' | tr '-' '_'`_SSH_USERNAME >> $GITHUB_ENV
 
+      - name: Inspect IONOS deployment configuration
+        run: |
+          echo "=== .deploy-now tree ==="
+          find deployment/.deploy-now -maxdepth 3 -type f -print
+
+          echo ""
+          echo "=== Root deployment config ==="
+          if [ -f deployment/.deploy-now/config.yaml ]; then
+            echo "FOUND: deployment/.deploy-now/config.yaml"
+            cat deployment/.deploy-now/config.yaml
+          else
+            echo "NOT FOUND: deployment/.deploy-now/config.yaml"
+          fi
+
+          echo ""
+          echo "=== Project deployment config ==="
+          if [ -f deployment/.deploy-now/gta/config.yaml ]; then
+            echo "FOUND: deployment/.deploy-now/gta/config.yaml"
+          else
+            echo "NOT FOUND: deployment/.deploy-now/gta/config.yaml"
+          fi
+
+          echo ""
+          echo "=== Rendered environment ==="
+          if [ -f deployment/.deploy-now/gta/.env ]; then
+            echo "FOUND: deployment/.deploy-now/gta/.env"
+          else
+            echo "NOT FOUND: deployment/.deploy-now/gta/.env"
+          fi
+
       # ------------------------------------------------------------
       # Deploy to IONOS
       # ------------------------------------------------------------
