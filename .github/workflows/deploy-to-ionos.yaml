@@ -119,40 +119,33 @@ jobs:
       # Diagnostic: inspect results of template rendering
       # ------------------------------------------------------------
       - name: Check rendered environment
-        run: |
-          echo "=== Environment files after template rendering ==="
-          find deployment -name ".env*" -type f -print
+  run: |
+    echo "=== Environment files after rendering ==="
+    find deployment -name ".env*" -type f -print
 
-          echo ""
-          echo "=== Complete deployment tree ==="
-          find deployment -maxdepth 4 -type f -print | sort
+    echo ""
+    echo "=== Rendered .env ==="
 
-          echo ""
-          echo "=== .deploy-now/gta after rendering ==="
-          if [ -d deployment/.deploy-now/gta ]; then
-            ls -la deployment/.deploy-now/gta
-          else
-            echo "deployment/.deploy-now/gta does not exist"
-          fi
+    if [ -f deployment/.deploy-now/gta/.env ]; then
+      echo ".env WAS generated successfully."
+      echo ""
+      echo "Checking rendered variables..."
 
-          echo ""
-          if [ -f deployment/.env ]; then
-            echo ".env WAS generated."
+      grep -E '^DB_CONNECTION=' deployment/.deploy-now/gta/.env || echo "DB_CONNECTION missing"
+      grep -E '^DB_HOST=' deployment/.deploy-now/gta/.env || echo "DB_HOST missing"
+      grep -E '^DB_PORT=' deployment/.deploy-now/gta/.env || echo "DB_PORT missing"
+      grep -E '^DB_DATABASE=' deployment/.deploy-now/gta/.env || echo "DB_DATABASE missing"
+      grep -E '^DB_USERNAME=' deployment/.deploy-now/gta/.env || echo "DB_USERNAME missing"
 
-            echo ""
-            echo "Database variables present:"
-            grep -E '^(DB_HOST|DB_PORT|DB_DATABASE|DB_USERNAME)=' deployment/.env \
-              | sed 's/=.*/=<set>/'
-
-            if grep -q '^DB_PASSWORD=' deployment/.env; then
-              echo "DB_PASSWORD=<set>"
-            else
-              echo "DB_PASSWORD=<missing>"
-            fi
-
-          else
-            echo ".env was NOT generated."
-          fi
+      if grep -q '^DB_PASSWORD=' deployment/.deploy-now/gta/.env; then
+        echo "DB_PASSWORD=<set>"
+      else
+        echo "DB_PASSWORD=<missing>"
+      fi
+    else
+      echo ".env was NOT generated!"
+      exit 1
+    fi
 
       # ------------------------------------------------------------
       # Render real site URL into files
