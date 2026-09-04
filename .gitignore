@@ -1,0 +1,23 @@
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+
+# Composer dependencies
+/vendor/
+
+# Application/runtime files
+/storage/logs/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+*.log
+
+# IDE settings
+.idea/
+.vscode/
+*.code-workspace
+
+# Operating system files
+.DS_Store
+Thumbs.db
