@@ -4,7 +4,7 @@ $mailPassword = getenv('MAIL_PASSWORD');
 $basePath = getenv('BASE_PATH') ?: "/";
 $host = getenv('DB_HOST');  // Replace with your MySQL host, e.g., 'localhost' or an IP address
 $dbname = getenv('DB_DATABASE');  // Replace with your MySQL database name
-$username = getenv('DB_USER');  // Replace with your MySQL username
+$username = getenv('DB_USERNAME');  // Replace with your MySQL username
 $password = getenv('DB_PASSWORD');  // Replace with your MySQL password
 
 try {
