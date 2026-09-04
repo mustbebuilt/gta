@@ -1,5 +1,4 @@
 <?php
-$testVar = "x";
 $mailHost = getenv('MAIL_HOST');
 $mailPassword = getenv('MAIL_PASSWORD');
 $basePath = getenv('BASE_PATH') ?: "/";
