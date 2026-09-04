@@ -1,0 +1,14 @@
+version: 1.0
+
+# Optional: List folders you want to keep between deployments (e.g. uploads)
+persistency:
+  paths: []
+
+# Optional: Exclude files if needed
+excludes:
+  recurring: []
+
+# Optional: Commands to run on the server
+commands:
+  pre-deployment: []
+  post-deployment: []
