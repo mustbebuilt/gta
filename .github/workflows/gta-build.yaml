@@ -13,10 +13,6 @@ on:
         required: true
         type: string
 
-# CRITICAL: This must be present at the root level to inherit the IONOS API keys
-secrets:
-  inherit:
-
 env:
   DEPLOYMENT_FOLDER: ./
 
@@ -29,18 +25,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
         with:
-          submodules: "recursive" # Fixed layout indentation
-
-      # 1. SETUP PHP RUNTIME IN GITHUB RUNNER
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.2" # Match your target IONOS PHP production version
-          extensions: mbstring, xml, ctype, iconv
-
-      # 2. RUN COMPOSER TO GENERATE THE VENDOR FOLDER & PHPDOTENV
-      - name: Install Composer Dependencies
-        run: composer install --no-dev --optimize-autoloader
+          submodules: "recursive"
 
       # Please do not touch the following action
       - name: Store deployment content
