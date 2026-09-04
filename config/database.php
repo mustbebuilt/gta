@@ -8,6 +8,7 @@ $dbname = getenv('DB_DATABASE');  // Replace with your MySQL database name
 $username = getenv('DB_USERNAME');  // Replace with your MySQL username
 $password = getenv('DB_PASSWORD');  // Replace with your MySQL password
 
+
 try {
     // Create a PDO connection to MySQL
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
