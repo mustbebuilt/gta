@@ -17,11 +17,11 @@ on:
         required: true
         type: string
       deployment-ids:
-        require: true
+        required: true
         type: string
 
   push:
-    path:
+    paths:
       - ./.github/workflows/deploy-to-ionos.yaml
 
 concurrency: ${{ github.ref }}
@@ -40,8 +40,9 @@ jobs:
 
     steps:
       # ------------------------------------------------------------
-      # Update deployment status
+      # Mark deployment as in progress
       # ------------------------------------------------------------
+
       - name: Update deployment status
         uses: ionos-deploy-now/project-action@v1
         with:
@@ -54,8 +55,9 @@ jobs:
           status: in_progress
 
       # ------------------------------------------------------------
-      # Retrieve stored deployment
+      # Retrieve the build artifact
       # ------------------------------------------------------------
+
       - name: Retrieve stored deployment
         uses: ionos-deploy-now/artifact-action@v1
         with:
@@ -67,28 +69,9 @@ jobs:
           action: download
 
       # ------------------------------------------------------------
-      # Diagnostic: inspect deployment before rendering
+      # Get deployment information
       # ------------------------------------------------------------
-      - name: Inspect deployment files
-        run: |
-          echo "=== Deployment root ==="
-          ls -la deployment
 
-          echo ""
-          echo "=== Deploy Now directory ==="
-          if [ -d deployment/.deploy-now ]; then
-            find deployment/.deploy-now -maxdepth 3 -type f -print
-          else
-            echo "WARNING: deployment/.deploy-now does not exist"
-          fi
-
-          echo ""
-          echo "=== Environment files before template rendering ==="
-          find deployment -name ".env*" -type f -print
-
-      # ------------------------------------------------------------
-      # Fetch deployment information
-      # ------------------------------------------------------------
       - name: Fetch deployment info
         uses: ionos-deploy-now/project-action@v1
         id: deployment
@@ -101,11 +84,9 @@ jobs:
           action: retrieve-info
 
       # ------------------------------------------------------------
-      # Render .env.template and other runtime templates
-      #
-      # IMPORTANT:
-      # No intermediate-data-file is specified here.
+      # Render .env.template -> .env
       # ------------------------------------------------------------
+
       - name: Render templates
         uses: ionos-deploy-now/template-renderer-action@v2
         id: template
@@ -116,40 +97,76 @@ jobs:
           output-directory: deployment
 
       # ------------------------------------------------------------
-      # Diagnostic: inspect results of template rendering
+      # Diagnostic - check generated .env
       # ------------------------------------------------------------
+
       - name: Check rendered environment
-  run: |
-    echo "=== Environment files after rendering ==="
-    find deployment -name ".env*" -type f -print
+        run: |
+          echo "=== Deployment directory ==="
+          find deployment -maxdepth 4 -type f -print | sort
 
-    echo ""
-    echo "=== Rendered .env ==="
+          echo ""
+          echo "=== .deploy-now/gta directory ==="
 
-    if [ -f deployment/.deploy-now/gta/.env ]; then
-      echo ".env WAS generated successfully."
-      echo ""
-      echo "Checking rendered variables..."
+          ls -la deployment/.deploy-now/gta/
 
-      grep -E '^DB_CONNECTION=' deployment/.deploy-now/gta/.env || echo "DB_CONNECTION missing"
-      grep -E '^DB_HOST=' deployment/.deploy-now/gta/.env || echo "DB_HOST missing"
-      grep -E '^DB_PORT=' deployment/.deploy-now/gta/.env || echo "DB_PORT missing"
-      grep -E '^DB_DATABASE=' deployment/.deploy-now/gta/.env || echo "DB_DATABASE missing"
-      grep -E '^DB_USERNAME=' deployment/.deploy-now/gta/.env || echo "DB_USERNAME missing"
+          echo ""
+          echo "=== Rendered .env ==="
 
-      if grep -q '^DB_PASSWORD=' deployment/.deploy-now/gta/.env; then
-        echo "DB_PASSWORD=<set>"
-      else
-        echo "DB_PASSWORD=<missing>"
-      fi
-    else
-      echo ".env was NOT generated!"
-      exit 1
-    fi
+          if [ -f deployment/.deploy-now/gta/.env ]; then
+
+            echo ".env WAS generated successfully."
+            echo ""
+
+            echo "Checking rendered variables:"
+
+            if grep -q '^DB_CONNECTION=' deployment/.deploy-now/gta/.env; then
+              echo "DB_CONNECTION=<set>"
+            else
+              echo "DB_CONNECTION=<missing>"
+            fi
+
+            if grep -q '^DB_HOST=' deployment/.deploy-now/gta/.env; then
+              echo "DB_HOST=<set>"
+            else
+              echo "DB_HOST=<missing>"
+            fi
+
+            if grep -q '^DB_PORT=' deployment/.deploy-now/gta/.env; then
+              echo "DB_PORT=<set>"
+            else
+              echo "DB_PORT=<missing>"
+            fi
+
+            if grep -q '^DB_DATABASE=' deployment/.deploy-now/gta/.env; then
+              echo "DB_DATABASE=<set>"
+            else
+              echo "DB_DATABASE=<missing>"
+            fi
+
+            if grep -q '^DB_USERNAME=' deployment/.deploy-now/gta/.env; then
+              echo "DB_USERNAME=<set>"
+            else
+              echo "DB_USERNAME=<missing>"
+            fi
+
+            if grep -q '^DB_PASSWORD=' deployment/.deploy-now/gta/.env; then
+              echo "DB_PASSWORD=<set>"
+            else
+              echo "DB_PASSWORD=<missing>"
+            fi
+
+          else
+
+            echo "ERROR: .env was NOT generated!"
+            exit 1
+
+          fi
 
       # ------------------------------------------------------------
-      # Render real site URL into files
+      # Render real site URL
       # ------------------------------------------------------------
+
       - name: Render real site-url to all files
         run: |
           for file in `grep -rl 'https://IONOS_DEPLOY_NOW_SITE_URL' .`; do
@@ -159,6 +176,7 @@ jobs:
       # ------------------------------------------------------------
       # Determine SSH username secret
       # ------------------------------------------------------------
+
       - name: Render SSH user secret name
         run: |
           echo SSH_USERNAME_SECRET=IONOS_DEPLOYMENT_`echo ${{ matrix.deployment-id }} | tr '[:lower:]' '[:upper:]' | tr '-' '_'`_SSH_USERNAME >> $GITHUB_ENV
@@ -166,6 +184,7 @@ jobs:
       # ------------------------------------------------------------
       # Deploy to IONOS
       # ------------------------------------------------------------
+
       - name: Deploy to IONOS
         uses: ionos-deploy-now/deploy-to-ionos-action@v2
         with:
@@ -179,8 +198,9 @@ jobs:
           ssh-key: ${{ secrets.IONOS_SSH_KEY }}
 
       # ------------------------------------------------------------
-      # Update deployment status
+      # Mark deployment status
       # ------------------------------------------------------------
+
       - name: Update deployment status
         if: ${{ always() }}
         uses: ionos-deploy-now/project-action@v1
@@ -193,14 +213,13 @@ jobs:
           action: update-status
           status: ${{ job.status }}
 
-  # ==================================================================
-  # Notify deployments finished
-  # ==================================================================
+  # ----------------------------------------------------------------
+  # Notify that all deployments have finished
+  # ----------------------------------------------------------------
 
   notify-deployment-finished:
     needs: deploy-to-ionos
     if: ${{ github.event_name == 'workflow_dispatch' && always() }}
-
     runs-on: ubuntu-latest
 
     steps:
