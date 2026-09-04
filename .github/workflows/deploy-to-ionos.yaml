@@ -81,7 +81,7 @@ jobs:
         with:
           deployment-id: ${{ matrix.deployment-id }}
           data: "[${{ toJson(secrets) }}, ${{ steps.deployment.outputs.template-variables }}]"
-          input-directory: deployment
+          input-directory: deployment/.deploy-now/gta
           output-directory: deployment
 
       # ------------------------------------------------------------
