@@ -34,6 +34,7 @@ jobs:
     strategy:
       matrix:
         deployment-id: ${{ fromJson(inputs.deployment-ids) }}
+
     steps:
       - name: Update deployment status
         uses: ionos-deploy-now/project-action@v1
@@ -56,6 +57,26 @@ jobs:
           version: ${{ inputs.version }}
           action: download
 
+      # ------------------------------------------------------------
+      # DIAGNOSTIC: Check whether .env.template exists in the artifact
+      # ------------------------------------------------------------
+      - name: Inspect deployment files
+        run: |
+          echo "=== Deployment root ==="
+          ls -la deployment
+
+          echo ""
+          echo "=== Deploy Now directory ==="
+          if [ -d deployment/.deploy-now ]; then
+            find deployment/.deploy-now -maxdepth 3 -type f -print
+          else
+            echo "WARNING: deployment/.deploy-now does not exist"
+          fi
+
+          echo ""
+          echo "=== Environment files before template rendering ==="
+          find deployment -name ".env*" -type f -print
+
       - name: Fetch deployment info
         uses: ionos-deploy-now/project-action@v1
         id: deployment
@@ -76,6 +97,33 @@ jobs:
           input-directory: deployment
           output-directory: deployment
           intermediate-data-file: deployment/.template-renderer-data
+
+      # ------------------------------------------------------------
+      # DIAGNOSTIC: Check whether template rendering created .env
+      # Do NOT display the contents because it may contain passwords.
+      # ------------------------------------------------------------
+      - name: Check rendered environment
+        run: |
+          echo "=== Environment files after template rendering ==="
+          find deployment -name ".env*" -type f -print
+
+          echo ""
+          if [ -f deployment/.env ]; then
+            echo ".env WAS generated."
+
+            echo ""
+            echo "Database variables present:"
+            grep -E '^(DB_HOST|DB_PORT|DB_DATABASE|DB_USERNAME)=' deployment/.env \
+              | sed 's/=.*/=<set>/'
+
+            if grep -q '^DB_PASSWORD=' deployment/.env; then
+              echo "DB_PASSWORD=<set>"
+            else
+              echo "DB_PASSWORD=<missing>"
+            fi
+          else
+            echo ".env was NOT generated."
+          fi
 
       - name: Render real site-url to all files
         run: |
@@ -114,6 +162,7 @@ jobs:
     needs: deploy-to-ionos
     if: ${{ github.event_name == 'workflow_dispatch' && always() }}
     runs-on: ubuntu-latest
+
     steps:
       - name: Notify all deployments finished
         uses: ionos-deploy-now/project-action@v1
