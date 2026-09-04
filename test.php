@@ -8,6 +8,6 @@ ini_set('display_errors', 1);
 require_once __DIR__ . '/config/footer.php';
 require_once __DIR__ . '/config/database.php';
 
-echo getenv('IONOS_MAIL_HOST');
+echo getenv('MAIL_HOST');
 
 // print_r($pdo
