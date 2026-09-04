@@ -10,4 +10,9 @@ require_once __DIR__ . '/config/database.php';
 
 echo getenv('MAIL_HOST');
 
+echo "Current directory is: " . __DIR__ . "<br>";
+echo "Files found in root:<br>";
+print_r(scandir(__DIR__));
+
+
 // print_r($pdo
