@@ -28,7 +28,7 @@ echo "Composer loaded.\n";
 
 echo "\nLoading .env with phpdotenv:\n";
 
-$dotenv = Dotenv\Dotenv::createUnsafeImmutable(__DIR__);
+$dotenv = Dotenv\Dotenv::createUnsafeImmutable(__DIR__ . '/deployment/.deploy-now/gta/.env');
 $dotenv->safeLoad();
 
 echo "Dotenv loaded.\n";
