@@ -42,6 +42,10 @@ echo "DB_DATABASE   = " . (getenv('DB_DATABASE') ?: '<not set>') . "\n";
 echo "DB_USERNAME   = " . (getenv('DB_USERNAME') ?: '<not set>') . "\n";
 echo "DB_PASSWORD   = " . (getenv('DB_PASSWORD') ? '<set>' : '<not set>') . "\n";
 
+echo "DB_HOST = " . getenv('DB_HOST') . "\n";
+echo "DB_HOST = " . $_ENV['DB_HOST'] . "\n";
+echo "DB_HOST = " . $_SERVER['DB_HOST'] . "\n";
+
 echo '</pre>';
 
 
