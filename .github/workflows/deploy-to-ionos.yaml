@@ -73,7 +73,7 @@ jobs:
 
       - name: Check IONOS template variables Here
         env:
-        TEMPLATE_VARS: ${{ steps.deployment.outputs.template-variables }}
+          TEMPLATE_VARS: ${{ steps.deployment.outputs.template-variables }}
         run: |
           echo "=== IONOS template variables ==="
 
