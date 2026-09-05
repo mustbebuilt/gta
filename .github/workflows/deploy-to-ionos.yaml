@@ -71,7 +71,7 @@ jobs:
           deployment-id: ${{ matrix.deployment-id }}
           action: retrieve-info
 
-      - name: Check IONOS template variables
+      - name: Check IONOS template variables Here
         env:
         TEMPLATE_VARS: ${{ steps.deployment.outputs.template-variables }}
         run: |
