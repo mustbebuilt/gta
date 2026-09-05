@@ -156,25 +156,6 @@ jobs:
             sed -i $file -e 's|https://IONOS_DEPLOY_NOW_SITE_URL|${{ fromJson(steps.deployment.outputs.info).site-url }}|g'
           done
 
-          - name: Check IONOS template variables
-  env:
-    TEMPLATE_VARS: ${{ steps.deployment.outputs.template-variables }}
-  run: |
-    echo "=== IONOS template variables ==="
-
-    echo "$TEMPLATE_VARS" | grep -o '"[^"]*IONOS_DB_[^"]*"' \
-      | sed 's/:.*//' \
-      | sort -u \
-      || echo "No IONOS_DB_* variables found"
-
-    echo ""
-    echo "=== Deployment-specific DB secrets available ==="
-
-    env | grep '^IONOS_DEPLOYMENT_.*_DB_' \
-      | sed 's/=.*$/=<set>/' \
-      | sort \
-      || echo "No deployment DB variables exposed to this step"
-
       # ------------------------------------------------------------
       # Determine SSH username secret
       # ------------------------------------------------------------
