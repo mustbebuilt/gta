@@ -46,14 +46,14 @@ echo '</pre>';
 
 
 
-require_once __DIR__ . '/config/footer.php';
-require_once __DIR__ . '/config/database.php';
+// require_once __DIR__ . '/config/footer.php';
+// require_once __DIR__ . '/config/database.php';
 
-echo getenv('MAIL_HOST');
+// echo getenv('MAIL_HOST');
 
-echo "Current directory is: " . __DIR__ . "<br>";
-echo "Files found in root:<br>";
-print_r(scandir(__DIR__));
+// echo "Current directory is: " . __DIR__ . "<br>";
+// echo "Files found in root:<br>";
+// print_r(scandir(__DIR__));
 
 
 // print_r($pdo
