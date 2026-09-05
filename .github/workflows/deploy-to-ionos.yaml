@@ -39,6 +39,10 @@ jobs:
         deployment-id: ${{ fromJson(inputs.deployment-ids) }}
 
     steps:
+      # ------------------------------------------------------------
+      # Mark deployment as in progress
+      # ------------------------------------------------------------
+
       - name: Update deployment status
         uses: ionos-deploy-now/project-action@v1
         with:
@@ -50,6 +54,10 @@ jobs:
           action: update-status
           status: in_progress
 
+      # ------------------------------------------------------------
+      # Retrieve the build artifact
+      # ------------------------------------------------------------
+
       - name: Retrieve stored deployment
         uses: ionos-deploy-now/artifact-action@v1
         with:
@@ -59,6 +67,10 @@ jobs:
           branch-id: ${{ inputs.branch-id }}
           version: ${{ inputs.version }}
           action: download
+
+      # ------------------------------------------------------------
+      # Get deployment information and IONOS variables
+      # ------------------------------------------------------------
 
       - name: Fetch deployment info
         uses: ionos-deploy-now/project-action@v1
@@ -71,26 +83,11 @@ jobs:
           deployment-id: ${{ matrix.deployment-id }}
           action: retrieve-info
 
-      - name: Check IONOS template variables
-        env:
-          TEMPLATE_VARS: ${{ steps.deployment.outputs.template-variables }}
-        run: |
-          echo "=== IONOS template variables ==="
-
-          echo "$TEMPLATE_VARS" | grep -o '"[^"]*IONOS_DB_[^"]*"' \
-            | sed 's/:.*//' \
-            | sort -u \
-            || echo "No IONOS_DB_* variables found"
-
-          echo ""
-          echo "=== Deployment-specific DB secrets available ==="
-
-          env | grep '^IONOS_DEPLOYMENT_.*_DB_' \
-            | sed 's/=.*$/=<set>/' \
-            | sort \
-            || echo "No deployment DB variables exposed to this step"
       # ------------------------------------------------------------
       # Render .env.template -> .env
+      #
+      # IONOS supplies the deployment-specific variables through
+      # steps.deployment.outputs.template-variables.
       # ------------------------------------------------------------
 
       - name: Render templates
@@ -103,75 +100,79 @@ jobs:
           output-directory: deployment
 
       # ------------------------------------------------------------
-      # Check generated .env
+      # Verify generated runtime configuration
+      #
+      # Do NOT display the contents of .env.
       # ------------------------------------------------------------
 
       - name: Check rendered environment
         run: |
-          echo "=== .deploy-now/gta directory ==="
-          ls -la deployment/.deploy-now/gta/
+          echo "=== Deployment configuration ==="
 
-          echo ""
-          echo "=== Rendered .env status ==="
-
-          if [ ! -f deployment/.deploy-now/gta/.env ]; then
-            echo "ERROR: .env was NOT generated."
-            exit 1
-          fi
-
-          echo ".env WAS generated successfully."
-
-          echo ""
-          echo "=== Checking rendered values ==="
-
-          echo ""
-          echo "DB_CONNECTION:"
-          grep '^DB_CONNECTION=' deployment/.deploy-now/gta/.env \
-            | sed 's/=.*/=<set>/'
-
-          echo "DB_HOST:"
-          grep '^DB_HOST=' deployment/.deploy-now/gta/.env \
-            | sed 's/=.*/=<set>/'
-
-          echo "DB_PORT:"
-          grep '^DB_PORT=' deployment/.deploy-now/gta/.env \
-            | sed 's/=.*/=<set>/'
-
-          echo "DB_DATABASE:"
-          grep '^DB_DATABASE=' deployment/.deploy-now/gta/.env \
-            | sed 's/=.*/=<set>/'
-
-          echo "DB_USERNAME:"
-          grep '^DB_USERNAME=' deployment/.deploy-now/gta/.env \
-            | sed 's/=.*/=<set>/'
-
-          if grep -q '^DB_PASSWORD=' deployment/.deploy-now/gta/.env; then
-            echo "DB_PASSWORD: <set>"
+          if [ -f deployment/.deploy-now/gta/config.yaml ]; then
+            echo "config.yaml: <present>"
           else
-            echo "DB_PASSWORD: <missing>"
+            echo "ERROR: deployment/.deploy-now/gta/config.yaml is missing"
+            exit 1
+          fi
+
+          if [ -f deployment/.deploy-now/gta/.env.template ]; then
+            echo ".env.template: <present>"
+          else
+            echo "ERROR: deployment/.deploy-now/gta/.env.template is missing"
+            exit 1
+          fi
+
+          if [ -f deployment/.deploy-now/gta/.env ]; then
+            echo ".env: <present>"
+          else
+            echo "ERROR: deployment/.deploy-now/gta/.env was not generated"
             exit 1
           fi
 
           echo ""
-          echo "=== Checking for unresolved template variables ==="
+          echo "=== Rendered environment variables ==="
+
+          check_var() {
+            local name="$1"
+
+            if grep -q "^${name}=" deployment/.deploy-now/gta/.env; then
+              echo "${name}: <set>"
+            else
+              echo "${name}: <missing>"
+              return 1
+            fi
+          }
+
+          check_var DB_CONNECTION
+          check_var DB_HOST
+          check_var DB_PORT
+          check_var DB_DATABASE
+          check_var DB_USERNAME
+          check_var DB_PASSWORD
+
+          echo ""
+          echo "=== Checking for unresolved IONOS variables ==="
 
           if grep -q 'IONOS_DB_' deployment/.deploy-now/gta/.env; then
-            echo "WARNING: Unresolved IONOS_DB_ variable found."
+            echo "ERROR: unresolved IONOS_DB_ variable found in .env"
             grep 'IONOS_DB_' deployment/.deploy-now/gta/.env \
               | sed 's/=.*/=<redacted>/'
             exit 1
-          else
-            echo "No unresolved IONOS_DB_ variables found."
           fi
 
+          echo "No unresolved IONOS_DB_ variables found."
+
       # ------------------------------------------------------------
-      # Render real site URL
+      # Render the real site URL
       # ------------------------------------------------------------
 
       - name: Render real site-url to all files
         run: |
-          for file in `grep -rl 'https://IONOS_DEPLOY_NOW_SITE_URL' .`; do
-            sed -i $file -e 's|https://IONOS_DEPLOY_NOW_SITE_URL|${{ fromJson(steps.deployment.outputs.info).site-url }}|g'
+          for file in $(grep -rl 'https://IONOS_DEPLOY_NOW_SITE_URL' . --exclude-dir=.git); do
+            sed -i \
+              's|https://IONOS_DEPLOY_NOW_SITE_URL|${{ fromJson(steps.deployment.outputs.info).site-url }}|g' \
+              "$file"
           done
 
       # ------------------------------------------------------------
@@ -180,37 +181,7 @@ jobs:
 
       - name: Render SSH user secret name
         run: |
-          echo SSH_USERNAME_SECRET=IONOS_DEPLOYMENT_`echo ${{ matrix.deployment-id }} | tr '[:lower:]' '[:upper:]' | tr '-' '_'`_SSH_USERNAME >> $GITHUB_ENV
-
-      - name: Inspect IONOS deployment configuration
-        run: |
-          echo "=== .deploy-now tree ==="
-          find deployment/.deploy-now -maxdepth 3 -type f -print
-
-          echo ""
-          echo "=== Root deployment config ==="
-          if [ -f deployment/.deploy-now/config.yaml ]; then
-            echo "FOUND: deployment/.deploy-now/config.yaml"
-            cat deployment/.deploy-now/config.yaml
-          else
-            echo "NOT FOUND: deployment/.deploy-now/config.yaml"
-          fi
-
-          echo ""
-          echo "=== Project deployment config ==="
-          if [ -f deployment/.deploy-now/gta/config.yaml ]; then
-            echo "FOUND: deployment/.deploy-now/gta/config.yaml"
-          else
-            echo "NOT FOUND: deployment/.deploy-now/gta/config.yaml"
-          fi
-
-          echo ""
-          echo "=== Rendered environment ==="
-          if [ -f deployment/.deploy-now/gta/.env ]; then
-            echo "FOUND: deployment/.deploy-now/gta/.env"
-          else
-            echo "NOT FOUND: deployment/.deploy-now/gta/.env"
-          fi
+          echo "SSH_USERNAME_SECRET=IONOS_DEPLOYMENT_$(echo '${{ matrix.deployment-id }}' | tr '[:lower:]' '[:upper:]' | tr '-' '_')_SSH_USERNAME" >> "$GITHUB_ENV"
 
       # ------------------------------------------------------------
       # Deploy to IONOS
